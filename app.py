@@ -8,11 +8,11 @@ st.set_page_config(page_title="InsightOps Sentry", layout="wide")
 
 st.title("🛡️ InsightOps Sentry - AI Monitor")
 
-# אתחול היסטוריה בזיכרון הדפדפן
+# restart
 if 'history' not in st.session_state:
     st.session_state.history = pd.DataFrame(columns=['cpu_usage', 'memory_usage', 'errors', 'latency'])
 
-# --- תפריט צד ---
+# sidebar menu
 st.sidebar.header("Simulation Control")
 mode = st.sidebar.radio("Mode", ["Manual", "Live Simulation"])
 
@@ -24,16 +24,15 @@ if mode == "Manual":
     run_btn = st.sidebar.button("Analyze System")
 else:
     run_sim = st.sidebar.toggle("Start Feed")
-    # יצירת נתונים אקראיים (עם סיכוי לתקלה)
+    # Random data generation (with a chance of failure)
     if random.random() > 0.8:
         cpu, mem, err, lat = (92.0, 400.0, 12, 1100.0)
     else:
         cpu, mem, err, lat = (random.uniform(10, 30), 300.0, 0, 15.0)
     run_btn = run_sim
 
-# --- שליחת הנתונים ---
+# --- Sending the data ---
 if run_btn:
-    # בניית ה-Payload בדיוק לפי מה שה-Server מצפה
     payload = {
         "current": {
             "cpu_usage": cpu,
@@ -45,14 +44,14 @@ if run_btn:
     }
     
     try:
-        response = requests.post("http://127.0.0.1:8000/analyze", json=payload)
+        response = requests.post("https://insightops.onrender.com/analyze", json=payload)
         data = response.json()
         
-        # שמירה להיסטוריה (לוקחים רק את 20 האחרונים)
+        # Save for history (only the last 20 are taken)
         new_row = pd.DataFrame([[cpu, mem, err, lat]], columns=st.session_state.history.columns)
         st.session_state.history = pd.concat([st.session_state.history, new_row]).tail(20)
         
-        # תצוגה
+        # display
         col1, col2 = st.columns([1, 2])
         with col1:
             st.subheader("Status")
@@ -71,4 +70,5 @@ if run_btn:
             st.rerun()
             
     except Exception as e:
+
         st.error(f"Connection Error: {e}")
